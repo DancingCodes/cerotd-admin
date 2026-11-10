@@ -1,0 +1,13 @@
+@import "tailwindcss";
+@import "@nuxt/ui";
+
+.page-enter-active,
+.page-leave-active {
+  transition: opacity 0.22s ease, transform 0.22s ease;
+}
+
+.page-enter-from,
+.page-leave-to {
+  opacity: 0;
+  transform: translateY(6px);
+}
