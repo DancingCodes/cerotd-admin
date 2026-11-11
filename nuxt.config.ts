@@ -6,6 +6,7 @@ export default defineNuxtConfig({
   fonts: { providers: { google: false, googleicons: false } },
   runtimeConfig: { adminApiToken: '', mysqlUrl: '', cosSecretId: '', cosSecretKey: '', cosBucketUrl: '', cosPublicBaseUrl: '', portalOrigin: '' },
   routeRules: { '/admin/**': { ssr: false } },
+  nitro: { externals: { inline: ['tencentcloud-sdk-nodejs-cdn'] } },
   css: ['~/assets/css/main.css'],
   typescript: { strict: true }
 })
