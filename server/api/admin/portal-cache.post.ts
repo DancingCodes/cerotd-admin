@@ -1,4 +1,4 @@
-import * as CdnClient from 'tencentcloud-sdk-nodejs-cdn/tencentcloud/services/cdn/v20180606/cdn_client'
+import * as CdnClient from 'tencentcloud-sdk-nodejs-cdn/tencentcloud/services/cdn/v20180606/cdn_client.js'
 
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
 
