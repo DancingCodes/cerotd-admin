@@ -8,6 +8,9 @@
             class="rounded-[10px] px-3 py-2 text-sm font-semibold text-gray-600 no-underline [&.router-link-active]:bg-[#e8f7f9] [&.router-link-active]:text-[#0e7f8f]">
             {{ item.label }}
           </NuxtLink>
+          <UButton size="sm" variant="soft" :loading="syncing" @click="syncPortal">
+            立即同步数据
+          </UButton>
           <UButton color="error" variant="soft" size="sm" @click="logout">退出</UButton>
         </nav>
       </div>
@@ -21,6 +24,7 @@
 <script setup lang="ts">
 const { clearToken, token } = useAdminAuth()
 const route = useRoute()
+const syncing = ref(false)
 const navItems = [
   { to: '/admin/product-categories', label: '产品分类' },
   { to: '/admin/products', label: '产品' },
@@ -30,4 +34,21 @@ const navItems = [
 ]
 useSeoMeta({ title: 'Cerotd 后台', robots: 'noindex, nofollow' })
 function logout() { clearToken(); navigateTo('/admin') }
+
+async function syncPortal() {
+  if (syncing.value) return
+  syncing.value = true
+  try {
+    const result = await apiFetch<{ refreshed: number; preheated: number }>('/api/admin/portal-cache', { method: 'POST' })
+    useToast().add({
+      title: '门户缓存已同步',
+      description: `已刷新 ${result.refreshed} 个 URL，并提交 ${result.preheated} 个 URL 预热。`,
+      color: 'success'
+    })
+  } catch {
+    // apiFetch displays the request error in a toast.
+  } finally {
+    syncing.value = false
+  }
+}
 </script>
