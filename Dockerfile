@@ -2,7 +2,7 @@ FROM node:22-bookworm-slim AS build
 WORKDIR /app
 ENV NUXT_TELEMETRY_DISABLED=1
 COPY package.json package-lock.json ./
-RUN npm ci
+RUN npm i
 COPY . .
 RUN npm run build
 
