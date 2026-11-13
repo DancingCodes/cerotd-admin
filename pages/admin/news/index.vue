@@ -29,9 +29,9 @@
             @update:model-value="toggleSelect(row.original.slug, Boolean($event))" />
         </template>
         <template #title-cell="{ row }">
-          <div class="font-semibold">{{ lt(row.original.title) }}</div>
+          <div class="min-w-0 max-w-full truncate font-semibold" :title="lt(row.original.title)">{{ lt(row.original.title) }}</div>
         </template>
-        <template #category-cell="{ row }">{{ categoryLabel(row.original.category) }}</template>
+        <template #category-cell="{ row }"><span class="whitespace-nowrap">{{ categoryLabel(row.original.category) }}</span></template>
         <template #publishedAt-cell="{ row }">{{ formatDateTime(row.original.publishedAt) }}</template>
         <template #status-cell="{ row }">
           <UBadge :color="row.original.isPublished ? 'success' : 'neutral'" variant="subtle">
@@ -72,12 +72,11 @@
           <UFormField :label="'已发布'" name="isPublished">
             <USelect v-model="form.isPublished" :items="publishOptions" class="w-full" />
           </UFormField>
-          <div class="col-span-full">
-            <div class="mb-1.5 text-3.25 font-semibold text-gray-600">{{ '封面' }}</div>
+          <UFormField class="col-span-full" :label="'封面'" name="coverUrl" required>
             <UFileUpload :model-value="coverUploadItem" :accept="imageAccept"
               :label="uploadingCover ? '上传中...' : (form.coverUrl ? '更换图片' : '上传图片')"
               :disabled="uploadingCover || saving" @update:model-value="onCoverUpload" />
-          </div>
+          </UFormField>
           <UFormField class="min-w-0 lg:col-span-2" :label="'英文摘要'" name="summaryEn">
             <UTextarea v-model="form.summaryEn" class="w-full" :rows="2" />
           </UFormField>

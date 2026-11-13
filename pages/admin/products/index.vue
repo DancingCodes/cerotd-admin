@@ -24,9 +24,9 @@
             @update:model-value="toggleSelect(row.original.slug, Boolean($event))" />
         </template>
         <template #name-cell="{ row }">
-          <div class="font-semibold">{{ lt(row.original.name) }}</div>
+          <div class="min-w-0 max-w-full truncate font-semibold" :title="lt(row.original.name)">{{ lt(row.original.name) }}</div>
         </template>
-        <template #category-cell="{ row }">{{ lt(row.original.category?.name ?? null) }}</template>
+        <template #category-cell="{ row }"><span class="whitespace-nowrap">{{ lt(row.original.category?.name ?? null) }}</span></template>
         <template #status-cell="{ row }">
           <UBadge :color="row.original.isPublished ? 'success' : 'neutral'" variant="subtle">
             {{ row.original.isPublished ? '已发布' : '未发布' }}</UBadge>
