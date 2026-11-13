@@ -57,6 +57,6 @@ export default defineApiHandler(async (event) => {
     return { refreshed: urls.length, preheated: urls.length, purgeTaskId, preheatTaskId: preheat.TaskId || '' }
   } catch (error) {
     console.error('Portal CDN sync failed', error)
-    throw createError({ statusCode: 502, statusMessage: 'CDN 刷新或预热失败。' })
+    throw createError({ statusCode: 500, statusMessage: 'CDN 刷新或预热失败。' })
   }
 })

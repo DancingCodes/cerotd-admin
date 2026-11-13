@@ -15,7 +15,7 @@ export default defineApiHandler(async (event) => {
   const origin = getHeader(event, 'origin')
   const allowed = useRuntimeConfig(event).portalOrigin
   if (origin && (!allowed || origin !== allowed)) {
-    throw createError({ statusCode: 403, statusMessage: '来源不允许。' })
+    throw createError({ statusCode: 500, statusMessage: '来源不允许。' })
   }
   const body = await readBody<ContactBody>(event)
   const name = clean(body.name)
