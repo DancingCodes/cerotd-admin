@@ -21,10 +21,10 @@ export default defineApiHandler(async (event) => {
   const nameZh = body.nameZh?.trim() || ''
   const categorySlug = body.categorySlug?.trim() || ''
   if (!nameEn || !nameZh) {
-    throw createError({ statusCode: 500, statusMessage: 'nameEn and nameZh are required' })
+    throw createError({ statusCode: 500, statusMessage: '请填写英文名称和中文名称。' })
   }
   if (!categorySlug) {
-    throw createError({ statusCode: 500, statusMessage: 'categorySlug is required' })
+    throw createError({ statusCode: 500, statusMessage: '请选择所属分类。' })
   }
 
   const categoryId = await resolveProductCategoryId(mysqlDb, categorySlug)
@@ -44,7 +44,7 @@ export default defineApiHandler(async (event) => {
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, [slug, categoryId, nameEn, nameZh, body.summaryEn?.trim() || '', body.summaryZh?.trim() || '', body.descriptionEn?.trim() || '', body.descriptionZh?.trim() || '', coverUrl, JSON.stringify(images), JSON.stringify(specsEn), JSON.stringify(specsZh), isPublished])
 
   if (!inserted) {
-    throw createError({ statusCode: 500, statusMessage: 'Failed to create product' })
+    throw createError({ statusCode: 500, statusMessage: '创建产品失败。' })
   }
 
   await finalizeFallbackSlug(mysqlDb, 'products', inserted.insertId, allocated.usedFallback, 'product')
@@ -52,7 +52,7 @@ export default defineApiHandler(async (event) => {
   const row = await mysqlDb.one<ProductRow>(`${productSelectSql} WHERE p.id = ?`, [inserted.insertId])
 
   if (!row) {
-    throw createError({ statusCode: 500, statusMessage: 'Failed to load created product' })
+    throw createError({ statusCode: 500, statusMessage: '读取新建产品失败。' })
   }
 
   return mapProduct(row)

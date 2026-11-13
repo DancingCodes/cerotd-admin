@@ -17,13 +17,13 @@ export default defineApiHandler(async (event) => {
   assertAdmin(event)
   const currentSlug = getRouterParam(event, 'slug')
   if (!currentSlug) {
-    throw createError({ statusCode: 500, statusMessage: 'slug is required' })
+    throw createError({ statusCode: 500, statusMessage: '产品标识不能为空。' })
   }
 
   const current = await mysqlDb.one<ProductRow>(`${productSelectSql} WHERE p.slug = ?`, [currentSlug])
 
   if (!current) {
-    throw createError({ statusCode: 500, statusMessage: 'Product not found' })
+    throw createError({ statusCode: 500, statusMessage: '未找到产品。' })
   }
 
   const body = await readBody<UpdateProductBody>(event)
@@ -57,7 +57,7 @@ export default defineApiHandler(async (event) => {
     body.coverUrl === undefined ? current.cover_url || images[0] || null : body.coverUrl || images[0] || null
 
   if (!nameEn || !nameZh) {
-    throw createError({ statusCode: 500, statusMessage: 'nameEn and nameZh are required' })
+    throw createError({ statusCode: 500, statusMessage: '请填写英文名称和中文名称。' })
   }
 
   await mysqlDb.execute(`UPDATE products
@@ -69,7 +69,7 @@ export default defineApiHandler(async (event) => {
   const updated = await mysqlDb.one<ProductRow>(`${productSelectSql} WHERE p.id = ?`, [current.id])
 
   if (!updated) {
-    throw createError({ statusCode: 500, statusMessage: 'Failed to update product' })
+    throw createError({ statusCode: 500, statusMessage: '更新产品失败。' })
   }
 
   return mapProduct(updated)

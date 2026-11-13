@@ -405,6 +405,7 @@ function validateForm() {
   if (!form.titleEn.trim()) errors.push({ name: 'titleEn', message: '请填写英文标题。' })
   if (!form.titleZh.trim()) errors.push({ name: 'titleZh', message: '请填写中文标题。' })
   if (!form.category.trim()) errors.push({ name: 'category', message: '请选择分类。' })
+  if (!form.coverUrl.trim()) errors.push({ name: 'coverUrl', message: '请上传封面。' })
   return errors
 }
 

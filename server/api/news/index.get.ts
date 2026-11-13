@@ -24,7 +24,7 @@ export default defineApiHandler(async (event) => {
   if (category) {
     const found = await findNewsCategory(mysqlDb, category)
     if (!found) {
-      throw createError({ statusCode: 500, statusMessage: 'invalid category' })
+      throw createError({ statusCode: 500, statusMessage: '新闻分类无效。' })
     }
     where.push('category = ?')
     binds.push(category)

@@ -7,12 +7,12 @@ export default defineApiHandler(async (event) => {
 
   const config = useRuntimeConfig(event)
   if (!config.cosSecretId || !config.cosSecretKey) {
-    throw createError({ statusCode: 500, statusMessage: 'Tencent Cloud credentials are not configured' })
+    throw createError({ statusCode: 500, statusMessage: '腾讯云配置未完成。' })
   }
 
   const origin = new URL(config.portalOrigin)
   if (origin.hostname !== 'cerotd.dancingcodes.cn') {
-    throw createError({ statusCode: 500, statusMessage: 'NUXT_PORTAL_ORIGIN must be cerotd.dancingcodes.cn' })
+    throw createError({ statusCode: 500, statusMessage: '网站地址配置必须是 cerotd.dancingcodes.cn。' })
   }
 
   const [products, news] = await Promise.all([
@@ -57,6 +57,6 @@ export default defineApiHandler(async (event) => {
     return { refreshed: urls.length, preheated: urls.length, purgeTaskId, preheatTaskId: preheat.TaskId || '' }
   } catch (error) {
     console.error('Portal CDN sync failed', error)
-    throw createError({ statusCode: 502, statusMessage: 'CDN refresh or preheat failed' })
+    throw createError({ statusCode: 502, statusMessage: 'CDN 刷新或预热失败。' })
   }
 })

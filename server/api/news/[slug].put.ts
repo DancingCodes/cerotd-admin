@@ -15,12 +15,12 @@ export default defineApiHandler(async (event) => {
   assertAdmin(event)
   const currentSlug = getRouterParam(event, 'slug')
   if (!currentSlug) {
-    throw createError({ statusCode: 500, statusMessage: 'slug is required' })
+    throw createError({ statusCode: 500, statusMessage: '新闻标识不能为空。' })
   }
 
   const current = await mysqlDb.one<NewsRow>('SELECT * FROM news WHERE slug = ?', [currentSlug])
   if (!current) {
-    throw createError({ statusCode: 500, statusMessage: 'News not found' })
+    throw createError({ statusCode: 500, statusMessage: '未找到新闻。' })
   }
 
   const body = await readBody<UpdateNewsBody>(event)
@@ -31,6 +31,9 @@ export default defineApiHandler(async (event) => {
   const contentEn = body.contentEn === undefined ? current.content_en : sanitizeNewsHtml(body.contentEn)
   const contentZh = body.contentZh === undefined ? current.content_zh : sanitizeNewsHtml(body.contentZh)
   const coverUrl = body.coverUrl === undefined ? current.cover_url : body.coverUrl?.trim() || null
+  if (!coverUrl) {
+    throw createError({ statusCode: 500, statusMessage: '请上传封面。' })
+  }
   const publishedAt = body.publishedAt?.trim() || current.published_at
   const isPublished =
     body.isPublished === undefined ? current.is_published : body.isPublished ? 1 : 0
@@ -39,11 +42,11 @@ export default defineApiHandler(async (event) => {
   const category = categoryRaw.toLowerCase()
   const categoryRow = await findNewsCategory(mysqlDb, category)
   if (!categoryRow) {
-    throw createError({ statusCode: 500, statusMessage: 'Create a news category first.' })
+    throw createError({ statusCode: 500, statusMessage: '请先创建新闻分类。' })
   }
 
   if (!titleEn || !titleZh) {
-    throw createError({ statusCode: 500, statusMessage: 'titleEn and titleZh are required' })
+    throw createError({ statusCode: 500, statusMessage: '请填写英文标题和中文标题。' })
   }
 
   await mysqlDb.execute(`UPDATE news
@@ -54,7 +57,7 @@ export default defineApiHandler(async (event) => {
 
   const updated = await mysqlDb.one<NewsRow>('SELECT * FROM news WHERE id = ?', [current.id])
   if (!updated) {
-    throw createError({ statusCode: 500, statusMessage: 'Failed to update news' })
+    throw createError({ statusCode: 500, statusMessage: '更新新闻失败。' })
   }
 
   return mapNews(updated)

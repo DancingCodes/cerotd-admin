@@ -1,7 +1,7 @@
 export default defineApiHandler(async (event) => {
   const slug = getRouterParam(event, 'slug')
   if (!slug) {
-    throw createError({ statusCode: 500, statusMessage: 'slug is required' })
+    throw createError({ statusCode: 500, statusMessage: '新闻标识不能为空。' })
   }
 
   const query = getQuery(event)
@@ -15,12 +15,12 @@ export default defineApiHandler(async (event) => {
     : await mysqlDb.one<NewsRow>('SELECT * FROM news WHERE slug = ? AND is_published = 1', [slug])
 
   if (!row) {
-    throw createError({ statusCode: 500, statusMessage: 'News not found' })
+    throw createError({ statusCode: 500, statusMessage: '未找到新闻。' })
   }
 
   const category = await findNewsCategory(mysqlDb, row.category)
   if (!category) {
-    throw createError({ statusCode: 500, statusMessage: 'News category not found' })
+    throw createError({ statusCode: 500, statusMessage: '未找到新闻分类。' })
   }
 
   return {
