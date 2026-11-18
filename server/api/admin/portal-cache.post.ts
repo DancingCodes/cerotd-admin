@@ -25,8 +25,7 @@ export default defineApiHandler(async (event) => {
     ...products.map(({ slug }) => `/products/${encodeURIComponent(slug)}`),
     ...news.map(({ slug }) => `/news/${encodeURIComponent(slug)}`)
   ]
-  const apiPaths = ['/api/products', '/api/product-categories', '/api/news', '/api/news-categories']
-  const urls = [...new Set([...pagePaths, ...apiPaths].map(path => new URL(path, origin).toString()))]
+  const urls = [...new Set(pagePaths.map(path => new URL(path, origin).toString()))]
 
   const client = new CdnClient.Client({
     credential: { secretId: config.cosSecretId, secretKey: config.cosSecretKey },
