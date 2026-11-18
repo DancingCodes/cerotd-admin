@@ -29,11 +29,10 @@ export type NewsRow = {
   category: string
   title_en: string
   title_zh: string
-  summary_en: string
-  summary_zh: string
-  content_en: string
-  content_zh: string
+  body_en: string
+  body_zh: string
   cover_url: string | null
+  images_json: string | null
   is_published: number
   published_at: string
   created_at: string
@@ -158,15 +157,12 @@ export function mapNews(row: NewsRow) {
       en: row.title_en,
       zh: row.title_zh
     },
-    summary: {
-      en: row.summary_en,
-      zh: row.summary_zh
-    },
-    content: {
-      en: row.content_en,
-      zh: row.content_zh
+    body: {
+      en: row.body_en,
+      zh: row.body_zh
     },
     coverUrl: row.cover_url,
+    images: parseJsonArray(row.images_json),
     isPublished: row.is_published === 1,
     publishedAt: row.published_at,
     createdAt: row.created_at,

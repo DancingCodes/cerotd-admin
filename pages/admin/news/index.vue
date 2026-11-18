@@ -77,53 +77,21 @@
               :label="uploadingCover ? '上传中...' : (form.coverUrl ? '更换图片' : '上传图片')"
               :disabled="uploadingCover || saving" @update:model-value="onCoverUpload" />
           </UFormField>
-          <UFormField class="min-w-0 lg:col-span-2" :label="'英文摘要'" name="summaryEn">
-            <UTextarea v-model="form.summaryEn" class="w-full" :rows="2" />
+          <UFormField class="min-w-0 lg:col-span-2" :label="'英文正文'" name="bodyEn">
+            <UTextarea v-model="form.bodyEn" class="w-full" :rows="10" />
           </UFormField>
-          <UFormField class="min-w-0 lg:col-span-2" :label="'中文摘要'" name="summaryZh">
-            <UTextarea v-model="form.summaryZh" class="w-full" :rows="2" />
+          <UFormField class="min-w-0 lg:col-span-2" :label="'中文正文'" name="bodyZh">
+            <UTextarea v-model="form.bodyZh" class="w-full" :rows="10" />
           </UFormField>
-          <div class="min-w-0 lg:col-span-2">
-            <div class="mb-1.5 text-3.25 font-semibold text-gray-600">{{ '英文正文' }}</div>
-            <ClientOnly>
-              <UEditor v-model="form.contentEn" content-type="html" :image="{ inline: false, allowBase64: false }" :extensions="[newsImagePairExtension]">
-                <template #default="{ editor }">
-                  <div class="flex flex-wrap items-center gap-1 border-b border-[#e5eaf0] p-2">
-                    <UEditorToolbar :editor="editor" :items="editorToolbarItems" />
-                    <UButton icon="i-lucide-image-plus" color="neutral" variant="ghost" size="sm"
-                      aria-label="插入图片" title="插入图片"
-                      :loading="uploadingEditorImage" :disabled="uploadingEditorImage || saving" @click="uploadEditorImage(editor)" />
-                    <UButton icon="i-lucide-images" color="neutral" variant="ghost" size="sm"
-                      aria-label="插入双图" title="插入双图"
-                      :loading="uploadingEditorImage" :disabled="uploadingEditorImage || saving" @click="uploadEditorImage(editor, true)" />
-                  </div>
-                </template>
-              </UEditor>
-              <p class="mt-2 text-xs text-gray-500">{{ '点击 Image 可上传正文图片，图片存储在腾讯云 COS。' }}</p>
-            </ClientOnly>
-          </div>
-          <div class="min-w-0 lg:col-span-2">
-            <div class="mb-1.5 text-3.25 font-semibold text-gray-600">{{ '中文正文' }}</div>
-            <ClientOnly>
-              <UEditor v-model="form.contentZh" content-type="html" :image="{ inline: false, allowBase64: false }" :extensions="[newsImagePairExtension]">
-                <template #default="{ editor }">
-                  <div class="flex flex-wrap items-center gap-1 border-b border-[#e5eaf0] p-2">
-                    <UEditorToolbar :editor="editor" :items="editorToolbarItems" />
-                    <UButton icon="i-lucide-image-plus" color="neutral" variant="ghost" size="sm"
-                      aria-label="插入图片" title="插入图片"
-                      :loading="uploadingEditorImage" :disabled="uploadingEditorImage || saving" @click="uploadEditorImage(editor)" />
-                    <UButton icon="i-lucide-images" color="neutral" variant="ghost" size="sm"
-                      aria-label="插入双图" title="插入双图"
-                      :loading="uploadingEditorImage" :disabled="uploadingEditorImage || saving" @click="uploadEditorImage(editor, true)" />
-                  </div>
-                </template>
-              </UEditor>
-              <p class="mt-2 text-xs text-gray-500">{{ '点击 Image 可上传正文图片，图片存储在腾讯云 COS。' }}</p>
-            </ClientOnly>
+          <div class="col-span-full">
+            <div class="mb-1.5 text-3.25 font-semibold text-gray-600">图片</div>
+            <UFileUpload :model-value="imageUploadItems" :accept="imageAccept" multiple
+              :label="uploadingImages ? '上传中...' : '上传图片'"
+              :disabled="uploadingImages || saving" @update:model-value="onImageUpload" />
           </div>
           <div class="col-span-full flex justify-end gap-2">
             <UButton color="neutral" variant="ghost" :disabled="saving" @click="closeForm">{{ '取消' }}</UButton>
-            <UButton type="submit" :loading="saving" :disabled="uploadingCover || uploadingEditorImage">{{ '保存' }}</UButton>
+            <UButton type="submit" :loading="saving" :disabled="uploadingCover || uploadingImages">{{ '保存' }}</UButton>
           </div>
         </UForm>
       </template>
@@ -133,7 +101,6 @@
 
 <script setup lang="ts">
 import type { TableColumn } from '@nuxt/ui'
-import { Node } from '@tiptap/core'
 definePageMeta({
   layout: 'admin'
 })
@@ -145,9 +112,9 @@ type NewsItem = {
   slug: string
   category: string
   title: Localized
-  summary: Localized
-  content: Localized
+  body: Localized
   coverUrl: string | null
+  images: string[]
   isPublished: boolean
   publishedAt: string
 }
@@ -204,42 +171,18 @@ const form = reactive({
   titleZh: '',
   slug: '',
   category: 'company',
-  summaryEn: '',
-  summaryZh: '',
-  contentEn: '',
-  contentZh: '',
+  bodyEn: '',
+  bodyZh: '',
   coverUrl: '',
+  images: [] as string[],
   publishedAt: '',
   isPublished: false
 })
 
 const imageAccept = 'image/jpeg,image/png,image/webp,image/gif,image/avif'
 const uploadingCover = ref(false)
-const uploadingEditorImage = ref(false)
+const uploadingImages = ref(false)
 const saving = ref(false)
-const editorToolbarItems = [[
-  { icon: 'i-lucide-bold', kind: 'mark', mark: 'bold' },
-  { icon: 'i-lucide-italic', kind: 'mark', mark: 'italic' },
-  { icon: 'i-lucide-heading-2', kind: 'heading', level: 2 },
-  { icon: 'i-lucide-heading-3', kind: 'heading', level: 3 },
-  { icon: 'i-lucide-list', kind: 'bulletList' },
-  { icon: 'i-lucide-list-ordered', kind: 'orderedList' },
-  { icon: 'i-lucide-remove-formatting', kind: 'clearFormatting' }
-]]
-
-const newsImagePairExtension = Node.create({
-  name: 'newsImagePair',
-  group: 'block',
-  content: 'image image',
-  defining: true,
-  isolating: true,
-  parseHTML() {
-    return [{ tag: 'div[data-news-image-pair]' }]
-  },
-  renderHTML({ HTMLAttributes }) {
-    return ['div', { ...HTMLAttributes, 'data-news-image-pair': '' }, 0]
-  }
-})
 
 type UploadedImage = {
   name: string
@@ -254,6 +197,7 @@ function uploadedImage(url: string): UploadedImage {
 }
 
 const coverUploadItem = computed(() => form.coverUrl ? uploadedImage(form.coverUrl) : null)
+const imageUploadItems = computed(() => form.images.map(uploadedImage))
 
 async function uploadImage(file: File) {
   const body = new FormData()
@@ -285,37 +229,25 @@ async function onCoverUpload(value: File | UploadedImage | null | undefined) {
   }
 }
 
-function uploadEditorImage(editor: any, pair = false) {
-  if (uploadingEditorImage.value || saving.value) return
-  const input = document.createElement('input')
-  input.type = 'file'
-  input.multiple = pair
-  input.accept = imageAccept
-  input.onchange = async () => {
-    const files = Array.from(input.files || []).slice(0, pair ? 2 : 1)
-    if (!files.length) return
-    if (pair && files.length !== 2) {
-      toast.add({ title: '请选择两张图片。', color: 'warning' })
-      return
-    }
-    uploadingEditorImage.value = true
-    try {
-      const urls: string[] = []
-      for (const file of files) urls.push(await uploadImage(file))
-      if (pair) {
-        editor.chain().focus().insertContent({
-          type: 'newsImagePair',
-          content: urls.map(src => ({ type: 'image', attrs: { src } }))
-        }).run()
-      } else {
-        editor.chain().focus().setImage({ src: urls[0] }).run()
-      }
-    } catch {
-    } finally {
-      uploadingEditorImage.value = false
-    }
+async function onImageUpload(value: Array<File | UploadedImage> | null | undefined) {
+  if (uploadingImages.value || saving.value) return
+  const entries = value || []
+  const retained = entries.filter((item): item is UploadedImage => !(item instanceof File)).map(item => item.avatar.src)
+  const files = entries.filter((item): item is File => item instanceof File)
+  if (!files.length) {
+    form.images = retained
+    return
   }
-  input.click()
+  uploadingImages.value = true
+  try {
+    const uploaded: string[] = []
+    for (const file of files) uploaded.push(await uploadImage(file))
+    form.images = [...retained, ...uploaded]
+  } catch {
+    form.images = retained
+  } finally {
+    uploadingImages.value = false
+  }
 }
 
 function categoryLabel(slug: string) {
@@ -340,11 +272,10 @@ function resetForm() {
     titleZh: '',
     slug: '',
     category: '',
-    summaryEn: '',
-    summaryZh: '',
-    contentEn: '',
-    contentZh: '',
+    bodyEn: '',
+    bodyZh: '',
     coverUrl: '',
+    images: [],
     publishedAt: toLocalInput(new Date().toISOString()),
     isPublished: false
   })
@@ -420,11 +351,10 @@ function startEdit(item: NewsItem) {
     titleZh: item.title.zh,
     slug: item.slug,
     category: item.category,
-    summaryEn: item.summary.en,
-    summaryZh: item.summary.zh,
-    contentEn: item.content.en,
-    contentZh: item.content.zh,
+    bodyEn: item.body.en,
+    bodyZh: item.body.zh,
     coverUrl: item.coverUrl || '',
+    images: [...item.images],
     publishedAt: toLocalInput(item.publishedAt),
     isPublished: item.isPublished
   })
@@ -445,17 +375,16 @@ function validateForm() {
 }
 
 async function save() {
-  if (saving.value || uploadingCover.value || uploadingEditorImage.value) return
+  if (saving.value || uploadingCover.value || uploadingImages.value) return
   saving.value = true
   const payload = {
     category: form.category,
     titleEn: form.titleEn,
     titleZh: form.titleZh,
-    summaryEn: form.summaryEn,
-    summaryZh: form.summaryZh,
-    contentEn: form.contentEn,
-    contentZh: form.contentZh,
+    bodyEn: form.bodyEn,
+    bodyZh: form.bodyZh,
     coverUrl: form.coverUrl || null,
+    images: form.images,
     publishedAt: fromLocalInput(form.publishedAt),
     isPublished: form.isPublished
   }
@@ -513,19 +442,3 @@ async function removeSelected() {
 
 onMounted(load)
 </script>
-
-<style>
-.ProseMirror [data-news-image-pair] {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
-  margin: 16px 0;
-}
-
-.ProseMirror [data-news-image-pair] img {
-  width: 100%;
-  height: 100%;
-  aspect-ratio: 4 / 3;
-  object-fit: contain;
-}
-</style>

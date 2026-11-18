@@ -2,11 +2,10 @@ type CreateNewsBody = {
   category?: string
   titleEn?: string
   titleZh?: string
-  summaryEn?: string
-  summaryZh?: string
-  contentEn?: string
-  contentZh?: string
+  bodyEn?: string
+  bodyZh?: string
   coverUrl?: string | null
+  images?: string[]
   isPublished?: boolean
   publishedAt?: string
 }
@@ -36,17 +35,16 @@ export default defineApiHandler(async (event) => {
 
   const isPublished = body.isPublished === true ? 1 : 0
   const publishedAt = body.publishedAt?.trim() || new Date().toISOString().slice(0, 19).replace('T', ' ')
-  const contentEn = sanitizeNewsHtml(body.contentEn || '')
-  const contentZh = sanitizeNewsHtml(body.contentZh || '')
+  const images = Array.isArray(body.images) ? body.images.filter((url): url is string => typeof url === 'string' && url.trim().length > 0).map(url => url.trim()) : []
   const coverUrl = body.coverUrl?.trim() || null
   if (!coverUrl) {
     throw createError({ statusCode: 500, statusMessage: '请上传封面。' })
   }
 
   const inserted = await mysqlDb.execute(`INSERT INTO news (
-        slug, category, title_en, title_zh, summary_en, summary_zh, content_en, content_zh,
-        cover_url, is_published, published_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, [slug, category, titleEn, titleZh, body.summaryEn?.trim() || '', body.summaryZh?.trim() || '', contentEn, contentZh, coverUrl, isPublished, publishedAt])
+        slug, category, title_en, title_zh, body_en, body_zh,
+        cover_url, images_json, is_published, published_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, [slug, category, titleEn, titleZh, body.bodyEn?.trim() || '', body.bodyZh?.trim() || '', coverUrl, JSON.stringify(images), isPublished, publishedAt])
 
   if (!inserted) {
     throw createError({ statusCode: 500, statusMessage: '创建新闻失败。' })

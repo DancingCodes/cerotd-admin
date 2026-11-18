@@ -2,11 +2,10 @@ type UpdateNewsBody = {
   category?: string
   titleEn?: string
   titleZh?: string
-  summaryEn?: string
-  summaryZh?: string
-  contentEn?: string
-  contentZh?: string
+  bodyEn?: string
+  bodyZh?: string
   coverUrl?: string | null
+  images?: string[]
   isPublished?: boolean
   publishedAt?: string
 }
@@ -26,11 +25,12 @@ export default defineApiHandler(async (event) => {
   const body = await readBody<UpdateNewsBody>(event)
   const titleEn = body.titleEn?.trim() ?? current.title_en
   const titleZh = body.titleZh?.trim() ?? current.title_zh
-  const summaryEn = body.summaryEn?.trim() ?? current.summary_en
-  const summaryZh = body.summaryZh?.trim() ?? current.summary_zh
-  const contentEn = body.contentEn === undefined ? current.content_en : sanitizeNewsHtml(body.contentEn)
-  const contentZh = body.contentZh === undefined ? current.content_zh : sanitizeNewsHtml(body.contentZh)
+  const bodyEn = body.bodyEn?.trim() ?? current.body_en
+  const bodyZh = body.bodyZh?.trim() ?? current.body_zh
   const coverUrl = body.coverUrl === undefined ? current.cover_url : body.coverUrl?.trim() || null
+  const images = body.images === undefined ? parseJsonArray(current.images_json) : Array.isArray(body.images)
+    ? body.images.filter((url): url is string => typeof url === 'string' && url.trim().length > 0).map(url => url.trim())
+    : []
   if (!coverUrl) {
     throw createError({ statusCode: 500, statusMessage: '请上传封面。' })
   }
@@ -50,10 +50,10 @@ export default defineApiHandler(async (event) => {
   }
 
   await mysqlDb.execute(`UPDATE news
-       SET category = ?, title_en = ?, title_zh = ?, summary_en = ?, summary_zh = ?,
-           content_en = ?, content_zh = ?, cover_url = ?, is_published = ?, published_at = ?,
+       SET category = ?, title_en = ?, title_zh = ?, body_en = ?, body_zh = ?,
+           cover_url = ?, images_json = ?, is_published = ?, published_at = ?,
            updated_at = UTC_TIMESTAMP()
-       WHERE id = ?`, [category, titleEn, titleZh, summaryEn, summaryZh, contentEn, contentZh, coverUrl, isPublished, publishedAt, current.id])
+       WHERE id = ?`, [category, titleEn, titleZh, bodyEn, bodyZh, coverUrl, JSON.stringify(images), isPublished, publishedAt, current.id])
 
   const updated = await mysqlDb.one<NewsRow>('SELECT * FROM news WHERE id = ?', [current.id])
   if (!updated) {

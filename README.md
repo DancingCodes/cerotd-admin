@@ -3,6 +3,7 @@
 独立 Nuxt 后台，界面固定中文；MySQL 保存产品、新闻的中英文内容及询盘，图片上传到腾讯云 COS。生产环境使用 Docker，容器监听 8080 端口。
 
 1. 在 MySQL 8 执行 `database-schema.sql`。
+   已有数据库升级时，只执行 `database-migrations/0002_news_images.sql`，再部署新版后台和 Web。升级会删除旧新闻的富文本列，请先备份数据库；旧新闻的摘要将保留为正文，你可以在后台重新录入新闻。
 2. 复制 `.env.example` 为 `.env`，填写数据库、后台令牌、COS 和门户来源域名。`NUXT_PORTAL_ORIGIN` 必须为 `https://cerotd.dancingcodes.cn`。
 3. 安装依赖后运行 `npm run dev`，访问 `/admin`。
 
