@@ -40,17 +40,20 @@ export default defineApiHandler(async (event) => {
     if (!purgeTaskId) throw new Error('CDN did not return a purge task ID')
 
     let complete = false
-    for (let attempt = 0; attempt < 45; attempt += 1) {
+    let lastStatuses: string[] = []
+    const deadline = Date.now() + 150_000
+    while (Date.now() < deadline) {
       await sleep(2000)
       const status = await client.DescribePurgeTasks({ TaskId: purgeTaskId, PurgeType: 'path' })
       const tasks = status.PurgeLogs?.filter(item => item.TaskId === purgeTaskId) || []
+      lastStatuses = tasks.map(item => item.Status || 'unknown')
       if (tasks.some(item => item.Status === 'fail')) throw new Error('CDN purge task failed')
       if (tasks.length && tasks.every(item => item.Status === 'done')) {
         complete = true
         break
       }
     }
-    if (!complete) throw new Error('CDN purge task timed out')
+    if (!complete) throw new Error(`CDN purge task ${purgeTaskId} timed out; last statuses: ${lastStatuses.join(',') || 'no records'}`)
 
     const preheat = await client.PushUrlsCache({ Urls: urls, Area: 'global' })
     return { refreshed: urls.length, preheated: urls.length, purgeTaskId, preheatTaskId: preheat.TaskId || '' }
