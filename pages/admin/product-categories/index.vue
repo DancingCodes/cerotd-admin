@@ -30,7 +30,7 @@
     </UCard>
 
 
-    <UModal v-model:open="formOpen"
+    <UModal v-model:open="formOpen" :dismissible="false"
       :title="editingSlug ? '编辑分类' : '新建分类'"
       :ui="{ content: 'max-w-2xl' }">
       <template #body>

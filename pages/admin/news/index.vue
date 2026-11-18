@@ -56,7 +56,7 @@
     </UCard>
 
 
-    <UModal v-model:open="formOpen" :title="editingSlug ? '编辑文章' : '创建文章'"
+    <UModal v-model:open="formOpen" :dismissible="false" :title="editingSlug ? '编辑文章' : '创建文章'"
       scrollable :ui="{ content: 'w-[calc(100vw-2rem)] max-w-7xl' }">
       <template #body>
         <UForm :state="form" :validate="validateForm" class="grid grid-cols-1 gap-4 lg:grid-cols-4" @submit="save">

@@ -49,7 +49,7 @@
       </div>
     </UCard>
 
-    <UModal v-model:open="formOpen"
+    <UModal v-model:open="formOpen" :dismissible="false"
       :title="editingSlug ? '编辑产品' : '新建产品'" scrollable
       :ui="{ content: 'w-[calc(100vw-2rem)] max-w-7xl' }">
       <template #body>
