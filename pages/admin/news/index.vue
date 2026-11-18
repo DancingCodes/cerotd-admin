@@ -86,12 +86,16 @@
           <div class="min-w-0 lg:col-span-2">
             <div class="mb-1.5 text-3.25 font-semibold text-gray-600">{{ '英文正文' }}</div>
             <ClientOnly>
-              <UEditor v-model="form.contentEn" content-type="html" :image="{ inline: false, allowBase64: false }">
+              <UEditor v-model="form.contentEn" content-type="html" :image="{ inline: false, allowBase64: false }" :extensions="[newsImagePairExtension]">
                 <template #default="{ editor }">
                   <div class="flex flex-wrap items-center gap-1 border-b border-[#e5eaf0] p-2">
                     <UEditorToolbar :editor="editor" :items="editorToolbarItems" />
                     <UButton icon="i-lucide-image-plus" color="neutral" variant="ghost" size="sm"
+                      aria-label="插入图片" title="插入图片"
                       :loading="uploadingEditorImage" :disabled="uploadingEditorImage || saving" @click="uploadEditorImage(editor)" />
+                    <UButton icon="i-lucide-images" color="neutral" variant="ghost" size="sm"
+                      aria-label="插入双图" title="插入双图"
+                      :loading="uploadingEditorImage" :disabled="uploadingEditorImage || saving" @click="uploadEditorImage(editor, true)" />
                   </div>
                 </template>
               </UEditor>
@@ -101,12 +105,16 @@
           <div class="min-w-0 lg:col-span-2">
             <div class="mb-1.5 text-3.25 font-semibold text-gray-600">{{ '中文正文' }}</div>
             <ClientOnly>
-              <UEditor v-model="form.contentZh" content-type="html" :image="{ inline: false, allowBase64: false }">
+              <UEditor v-model="form.contentZh" content-type="html" :image="{ inline: false, allowBase64: false }" :extensions="[newsImagePairExtension]">
                 <template #default="{ editor }">
                   <div class="flex flex-wrap items-center gap-1 border-b border-[#e5eaf0] p-2">
                     <UEditorToolbar :editor="editor" :items="editorToolbarItems" />
                     <UButton icon="i-lucide-image-plus" color="neutral" variant="ghost" size="sm"
+                      aria-label="插入图片" title="插入图片"
                       :loading="uploadingEditorImage" :disabled="uploadingEditorImage || saving" @click="uploadEditorImage(editor)" />
+                    <UButton icon="i-lucide-images" color="neutral" variant="ghost" size="sm"
+                      aria-label="插入双图" title="插入双图"
+                      :loading="uploadingEditorImage" :disabled="uploadingEditorImage || saving" @click="uploadEditorImage(editor, true)" />
                   </div>
                 </template>
               </UEditor>
@@ -125,6 +133,7 @@
 
 <script setup lang="ts">
 import type { TableColumn } from '@nuxt/ui'
+import { Node } from '@tiptap/core'
 definePageMeta({
   layout: 'admin'
 })
@@ -218,6 +227,20 @@ const editorToolbarItems = [[
   { icon: 'i-lucide-remove-formatting', kind: 'clearFormatting' }
 ]]
 
+const newsImagePairExtension = Node.create({
+  name: 'newsImagePair',
+  group: 'block',
+  content: 'image image',
+  defining: true,
+  isolating: true,
+  parseHTML() {
+    return [{ tag: 'div[data-news-image-pair]' }]
+  },
+  renderHTML({ HTMLAttributes }) {
+    return ['div', { ...HTMLAttributes, 'data-news-image-pair': '' }, 0]
+  }
+})
+
 type UploadedImage = {
   name: string
   avatar: { src: string }
@@ -262,18 +285,31 @@ async function onCoverUpload(value: File | UploadedImage | null | undefined) {
   }
 }
 
-function uploadEditorImage(editor: any) {
+function uploadEditorImage(editor: any, pair = false) {
   if (uploadingEditorImage.value || saving.value) return
   const input = document.createElement('input')
   input.type = 'file'
+  input.multiple = pair
   input.accept = imageAccept
   input.onchange = async () => {
-    const file = input.files?.[0]
-    if (!file) return
+    const files = Array.from(input.files || []).slice(0, pair ? 2 : 1)
+    if (!files.length) return
+    if (pair && files.length !== 2) {
+      toast.add({ title: '请选择两张图片。', color: 'warning' })
+      return
+    }
     uploadingEditorImage.value = true
     try {
-      const url = await uploadImage(file)
-      editor.chain().focus().setImage({ src: url }).run()
+      const urls: string[] = []
+      for (const file of files) urls.push(await uploadImage(file))
+      if (pair) {
+        editor.chain().focus().insertContent({
+          type: 'newsImagePair',
+          content: urls.map(src => ({ type: 'image', attrs: { src } }))
+        }).run()
+      } else {
+        editor.chain().focus().setImage({ src: urls[0] }).run()
+      }
     } catch {
     } finally {
       uploadingEditorImage.value = false
@@ -477,3 +513,19 @@ async function removeSelected() {
 
 onMounted(load)
 </script>
+
+<style>
+.ProseMirror [data-news-image-pair] {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin: 16px 0;
+}
+
+.ProseMirror [data-news-image-pair] img {
+  width: 100%;
+  height: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: contain;
+}
+</style>
