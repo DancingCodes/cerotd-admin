@@ -9,6 +9,8 @@
 
 产品与分类数据已导入 MySQL，产品图片存于腾讯云 COS 的 `cerotd/` 目录。页面文案跟随门户代码维护。
 
-后台导航中的“立即同步数据”会刷新 `https://cerotd.dancingcodes.cn/` 下的全站 CDN 缓存。后台等待刷新任务完成后，提交首页、栏目页及已发布产品/新闻详情页的全球预热；预热只提交任务，不等待任务完成，也不逐个预热 `/_nuxt/` 和 `public` 资源。
+产品分类由 Web 和后台各自的 `shared/product-categories.ts` 固定定义，后台只读并只允许产品选择这些分类；调整分类时需同步修改两端并发版。MySQL 的 `products_categories` 行仍用于产品外键，现有数据库应保留与固定 slug 对应的行。
 
-CDN 同步复用 `NUXT_COS_SECRET_ID` 和 `NUXT_COS_SECRET_KEY`，对应腾讯云密钥需具有 CDN 目录刷新、刷新任务查询和 URL 预热权限。同步接口最多等待目录刷新 150 秒，Nginx 到 admin 的 `proxy_read_timeout` 应至少为 180 秒，避免请求提前返回 504。
+后台导航中的“刷新数据缓存”刷新首页、栏目页、分类筛选页、站点地图和列表接口的 URL 缓存，同时刷新产品、新闻详情页及其接口目录（含已删除的详情 URL）；不清除图片、CSS 和 JS。刷新任务完成后，提交首页、栏目页及已发布产品/新闻详情页的全球预热。“刷新资源缓存”单独刷新 `/_nuxt/`、`/_i18n/`、`/images/`、`/video/` 和网站图标的缓存，并预热首页首屏图与 Logo。两种操作都只提交预热任务，不等待预热完成。
+
+CDN 同步复用 `NUXT_COS_SECRET_ID` 和 `NUXT_COS_SECRET_KEY`，对应腾讯云密钥需具有 CDN URL 刷新、目录刷新、刷新任务查询和 URL 预热权限。同步接口最多等待刷新任务 150 秒，Nginx 到 admin 的 `proxy_read_timeout` 应至少为 180 秒，避免请求提前返回 504。

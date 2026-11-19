@@ -1,4 +1,5 @@
 import type { MysqlDb } from './mysql'
+import { productCategories } from '../../shared/product-categories'
 
 export type ProductRow = {
   id: number
@@ -51,6 +52,7 @@ export function parseJsonArray(input: string | null | undefined) {
 
 export function mapProduct(row: ProductRow) {
   const images = parseJsonArray(row.images_json)
+  const fixedCategory = productCategories.find(category => category.slug === row.category_slug)
   return {
     id: row.id,
     slug: row.slug,
@@ -58,7 +60,7 @@ export function mapProduct(row: ProductRow) {
     category: row.category_slug
       ? {
           slug: row.category_slug,
-          name: {
+          name: fixedCategory?.name || {
             en: row.category_name_en || '',
             zh: row.category_name_zh || ''
           }

@@ -108,6 +108,7 @@
 
 <script setup lang="ts">
 import type { TableColumn } from '@nuxt/ui'
+import { productCategories } from '~/shared/product-categories'
 definePageMeta({
   layout: 'admin'
 })
@@ -146,9 +147,9 @@ const selectedSlugs = ref<string[]>([])
 const batchDeleting = ref(false)
 const allSelected = computed(() => items.value.length > 0 && items.value.every((item) => selectedSlugs.value.includes(item.slug)))
 const items = ref<ProductItem[]>([])
-const categories = ref<CategoryItem[]>([])
+const categories: readonly CategoryItem[] = productCategories
 const productCategoryOptions = computed(() => [
-  ...categories.value.map(category => ({ label: lt(category.name), value: category.slug }))
+  ...categories.map(category => ({ label: lt(category.name), value: category.slug }))
 ])
 const publishOptions = computed(() => [
   { label: '是', value: true },
@@ -156,7 +157,7 @@ const publishOptions = computed(() => [
 ])
 const categoryOptions = computed(() => [
   { label: '全部分类', value: 'all' },
-  ...categories.value.map(category => ({ label: lt(category.name), value: category.slug }))
+  ...categories.map(category => ({ label: lt(category.name), value: category.slug }))
 ])
 const statusOptions = computed(() => [
   { label: '全部状态', value: 'all' },
@@ -305,21 +306,17 @@ function toggleSelectAll(checked: boolean) {
 async function load() {
   pending.value = true
   try {
-    const [productData, categoryData] = await Promise.all([
-      apiFetch<{ items: ProductItem[]; total?: number }>('/api/products', {
-        query: {
-          all: 1,
-          page: page.value,
-          pageSize: pageSize.value,
-          q: search.value || undefined,
-          category: filterCategory.value === 'all' ? undefined : filterCategory.value,
-          status: filterStatus.value
-        }
-      }),
-      apiFetch<{ items: CategoryItem[] }>('/api/product-categories')
-    ])
+    const productData = await apiFetch<{ items: ProductItem[]; total?: number }>('/api/products', {
+      query: {
+        all: 1,
+        page: page.value,
+        pageSize: pageSize.value,
+        q: search.value || undefined,
+        category: filterCategory.value === 'all' ? undefined : filterCategory.value,
+        status: filterStatus.value
+      }
+    })
     items.value = productData.items
-    categories.value = categoryData.items
     total.value = Number(productData.total || productData.items.length)
     if (items.value.length === 0 && page.value > 1) {
       page.value -= 1
@@ -340,7 +337,7 @@ function applyFilters() {
 function startCreate() {
   editingSlug.value = ''
   Object.assign(form, emptyForm())
-  form.categorySlug = categories.value[0]?.slug || ''
+  form.categorySlug = categories[0]?.slug || ''
   formOpen.value = true
 }
 

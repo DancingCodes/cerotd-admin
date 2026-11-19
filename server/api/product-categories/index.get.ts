@@ -1,21 +1,22 @@
+import { productCategories } from '../../../shared/product-categories'
+
 export default defineApiHandler(async (event) => {
-  const query = getQuery(event)
-  const paging = parsePagination(query)
-  const orderSql = 'ORDER BY sort_order ASC, id ASC'
+  const paging = parsePagination(getQuery(event))
+  if (paging.enabled) assertAdmin(event)
 
-  if (!paging.enabled) {
-    const result = await mysqlDb.list<ProductCategoryRow>(`SELECT * FROM products_categories ${orderSql}`)
-    return { items: result.map(mapProductCategory) }
-  }
+  const rows = await mysqlDb.list<{ id: number; slug: string }>('SELECT id, slug FROM products_categories')
+  const ids = new Map(rows.map(row => [row.slug, row.id]))
+  const items = productCategories.map((category, index) => ({
+    id: ids.get(category.slug) ?? null,
+    ...category,
+    sortOrder: index + 1
+  }))
 
-  assertAdmin(event)
-  const countRow = await mysqlDb.one<{ count: number }>('SELECT COUNT(*) AS count FROM products_categories')
-  const total = Number(countRow?.count || 0)
-  const result = await mysqlDb.list<ProductCategoryRow>(`SELECT * FROM products_categories ${orderSql} LIMIT ? OFFSET ?`, [paging.pageSize, paging.offset])
+  if (!paging.enabled) return { items }
 
   return {
-    items: result.map(mapProductCategory),
-    total,
+    items: items.slice(paging.offset, paging.offset + paging.pageSize),
+    total: items.length,
     page: paging.page,
     pageSize: paging.pageSize
   }
