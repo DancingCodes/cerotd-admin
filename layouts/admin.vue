@@ -40,6 +40,10 @@ function logout() { clearToken(); navigateTo('/admin') }
 
 async function syncPortal(mode: 'content' | 'assets') {
   if (syncing.value) return
+  const message = mode === 'content'
+    ? '确定刷新产品、新闻相关页面和接口缓存，并重新预热页面吗？'
+    : '确定清空全站 CDN 缓存，并预热首页资源吗？刷新后部分资源首次访问可能需要回源。'
+  if (!window.confirm(message)) return
   syncing.value = mode
   try {
     const result = await apiFetch<{ refreshed: number; preheated: number }>('/api/admin/portal-cache', {
