@@ -46,14 +46,16 @@ async function syncPortal(mode: 'content' | 'assets') {
   if (!window.confirm(message)) return
   syncing.value = mode
   try {
-    const result = await apiFetch<{ refreshed: number; preheated: number }>('/api/admin/portal-cache', {
+    const result = await apiFetch<{ refreshed: number; preheated: number; failedUrls: string[] }>('/api/admin/portal-cache', {
       method: 'POST',
       body: { mode }
     })
     useToast().add({
-      title: mode === 'content' ? '数据缓存已刷新' : '资源缓存已刷新',
-      description: `已刷新 ${result.refreshed} 项缓存范围，并提交 ${result.preheated} 个 URL 预热。`,
-      color: 'success'
+      title: mode === 'content' ? '数据缓存已刷新' : result.failedUrls.length ? '部分资源预热失败' : '资源缓存已刷新',
+      description: mode === 'content'
+        ? `已刷新 ${result.refreshed} 项缓存范围，并提交 ${result.preheated} 个 URL 预热。`
+        : `已刷新全站缓存，${result.preheated} 个 URL 预热完成，${result.failedUrls.length} 个失败。`,
+      color: result.failedUrls.length ? 'warning' : 'success'
     })
   } catch {
     // apiFetch displays the request error in a toast.

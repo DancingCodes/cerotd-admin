@@ -102,12 +102,33 @@ export default defineApiHandler(async (event) => {
     }
 
     const preheatTaskIds: string[] = []
-    for (const batch of chunks(preheatUrls, 100)) {
+    const failedUrls = new Set<string>()
+    const preheatBatches = chunks(preheatUrls, mode === 'assets' ? 3 : 100)
+    const preheatDeadline = Date.now() + 50 * 60_000
+    for (const batch of preheatBatches) {
+      if (mode === 'assets' && Date.now() >= preheatDeadline) throw new Error('CDN preheat queue timed out')
       const result = await client.PushUrlsCache({ Urls: batch, Area: 'global' })
-      if (result.TaskId) preheatTaskIds.push(result.TaskId)
+      if (!result.TaskId) throw new Error('CDN did not return a preheat task ID')
+      preheatTaskIds.push(result.TaskId)
+
+      if (mode === 'assets') {
+        let finished = false
+        while (Date.now() < preheatDeadline) {
+          await sleep(5000)
+          const status = await client.DescribePushTasks({ TaskId: result.TaskId, Limit: 100 })
+          const logs = status.PushLogs?.filter(item => item.TaskId === result.TaskId) || []
+          if (logs.length < batch.length || logs.some(item => !['done', 'fail', 'invalid'].includes(item.Status || ''))) continue
+          for (const log of logs) {
+            if (log.Status !== 'done') failedUrls.add(log.Url || 'unknown')
+          }
+          finished = true
+          break
+        }
+        if (!finished) throw new Error(`CDN preheat timed out at task ${result.TaskId}`)
+      }
     }
 
-    return { mode, refreshed, preheated: preheatUrls.length, preheatTaskIds }
+    return { mode, refreshed, preheated: preheatUrls.length - failedUrls.size, failedUrls: [...failedUrls], preheatTaskIds }
   } catch (error) {
     console.error(`Portal CDN ${mode} sync failed`, error)
     throw createError({ statusCode: 500, statusMessage: 'CDN 刷新或预热失败。' })
