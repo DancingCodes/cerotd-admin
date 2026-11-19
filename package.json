@@ -13,6 +13,7 @@
     "@nuxt/ui": "^4.12.0",
     "cos-nodejs-sdk-v5": "2.15.4",
     "mysql2": "3.15.3",
+    "node-html-parser": "^9.0.7",
     "nuxt": "^4.5.2",
     "tailwindcss": "^4.3.3",
     "tencentcloud-sdk-nodejs-cdn": "^4.1.307",

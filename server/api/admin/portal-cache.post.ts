@@ -1,4 +1,5 @@
 import * as CdnClient from 'tencentcloud-sdk-nodejs-cdn/tencentcloud/services/cdn/v20180606/cdn_client.js'
+import { homepagePreheatUrls } from '../../utils/portal-preheat'
 
 type SyncMode = 'content' | 'assets'
 
@@ -47,20 +48,18 @@ export default defineApiHandler(async (event) => {
       ])
 
       const pagePaths = [
-        '/', '/about', '/advantages', '/contact', '/news', '/products', '/services',
-        ...products.map(({ slug }) => `/products/${encodeURIComponent(slug)}`),
-        ...news.map(({ slug }) => `/news/${encodeURIComponent(slug)}`),
+        '/products', '/news',
         ...productCategories.map(({ slug }) => `/products?category=${encodeURIComponent(slug)}`),
         ...newsCategories.map(({ slug }) => `/news?category=${encodeURIComponent(slug)}`)
       ]
       const apiPaths = [
-        '/api/products', '/api/product-categories', '/api/news', '/api/news-categories',
+        '/api/products', '/api/news', '/api/news-categories'
       ]
-      const urls = [...new Set([...pagePaths.filter(path => !path.startsWith('/products/') && !path.startsWith('/news/')), '/sitemap.xml', ...apiPaths].map(path => new URL(path, origin).toString()))]
+      const urls = [...new Set([...pagePaths, '/sitemap.xml', ...apiPaths].map(path => new URL(path, origin).toString()))]
       const contentPaths = ['/products/', '/news/', '/api/products/', '/api/news/'].map(path => new URL(path, origin).toString())
       refreshed = urls.length + contentPaths.length
       preheatUrls = [...new Set([
-        '/', '/about', '/advantages', '/contact', '/news', '/products', '/services',
+        ...pagePaths,
         ...products.filter(item => item.is_published === 1).map(({ slug }) => `/products/${encodeURIComponent(slug)}`),
         ...news.filter(item => item.is_published === 1).map(({ slug }) => `/news/${encodeURIComponent(slug)}`)
       ].map(path => new URL(path, origin).toString()))]
@@ -74,18 +73,10 @@ export default defineApiHandler(async (event) => {
       if (!contentPurge.TaskId) throw new Error('CDN did not return a content path purge task ID')
       purgeTasks.push({ id: contentPurge.TaskId, type: 'path' })
     } else {
-      const paths = ['/_nuxt/', '/_i18n/', '/images/', '/video/'].map(path => new URL(path, origin).toString())
-      const purge = await client.PurgePathCache({ Paths: paths, FlushType: 'delete' })
-      if (!purge.TaskId) throw new Error('CDN did not return a path purge task ID')
+      const purge = await client.PurgePathCache({ Paths: [new URL('/', origin).toString()], FlushType: 'delete' })
+      if (!purge.TaskId) throw new Error('CDN did not return a site purge task ID')
       purgeTasks.push({ id: purge.TaskId, type: 'path' })
-
-      const favicon = new URL('/favicon.svg', origin).toString()
-      const faviconPurge = await client.PurgeUrlsCache({ Urls: [favicon] })
-      if (!faviconPurge.TaskId) throw new Error('CDN did not return a favicon purge task ID')
-      purgeTasks.push({ id: faviconPurge.TaskId, type: 'url' })
-
-      refreshed = paths.length + 1
-      preheatUrls = ['/images/home/hero-bg.webp', '/images/logo.webp'].map(path => new URL(path, origin).toString())
+      refreshed = 1
     }
 
     const deadline = Date.now() + 150_000
@@ -100,6 +91,15 @@ export default defineApiHandler(async (event) => {
       purgeTasks = purgeTasks.filter((_, index) => !statuses[index])
     }
     if (purgeTasks.length) throw new Error(`CDN purge tasks timed out: ${purgeTasks.map(task => task.id).join(', ')}`)
+
+    if (mode === 'assets') {
+      const response = await fetch(new URL('/', origin), { signal: AbortSignal.timeout(15_000) })
+      if (!response.ok || !response.headers.get('content-type')?.includes('text/html')) {
+        throw new Error(`Cannot read portal homepage: HTTP ${response.status}`)
+      }
+      preheatUrls = homepagePreheatUrls(await response.text(), origin)
+      if (preheatUrls.length < 2) throw new Error('Portal homepage has no preheatable resources')
+    }
 
     const preheatTaskIds: string[] = []
     for (const batch of chunks(preheatUrls, 100)) {

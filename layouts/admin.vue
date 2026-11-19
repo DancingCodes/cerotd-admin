@@ -48,7 +48,7 @@ async function syncPortal(mode: 'content' | 'assets') {
     })
     useToast().add({
       title: mode === 'content' ? '数据缓存已刷新' : '资源缓存已刷新',
-      description: `已刷新 ${result.refreshed} ${mode === 'content' ? '个 URL' : '项资源范围'}，并提交 ${result.preheated} 个 URL 预热。`,
+      description: `已刷新 ${result.refreshed} 项缓存范围，并提交 ${result.preheated} 个 URL 预热。`,
       color: 'success'
     })
   } catch {
