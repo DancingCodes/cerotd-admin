@@ -51,9 +51,9 @@ async function syncPortal(mode: 'content' | 'assets') {
       body: { mode }
     })
     useToast().add({
-      title: mode === 'content' ? '数据缓存已刷新' : result.failedUrls.length ? '部分资源预热失败' : '资源缓存已刷新',
+      title: result.failedUrls.length ? '部分 URL 预热失败' : mode === 'content' ? '数据缓存已刷新' : '资源缓存已刷新',
       description: mode === 'content'
-        ? `已刷新 ${result.refreshed} 项缓存范围，并提交 ${result.preheated} 个 URL 预热。`
+        ? `已刷新 ${result.refreshed} 项缓存范围，${result.preheated} 个 URL 预热完成，${result.failedUrls.length} 个失败。`
         : `已刷新全站缓存，${result.preheated} 个 URL 预热完成，${result.failedUrls.length} 个失败。`,
       color: result.failedUrls.length ? 'warning' : 'success'
     })
